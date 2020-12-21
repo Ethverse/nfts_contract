@@ -520,34 +520,50 @@ contract EthverseNFT is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumer
     uint nonce;
     address public cityAddress;
     
-    mapping (uint256 => uint256) public nftCity;
-    mapping (uint256 => bytes) public nftMetaData;
+    mapping (uint256 => NftMeta) internal nftdata;
     
     
+    struct NftMeta {
+        uint city;
+        string nftType;
+        string data;
+        bytes metaData;
+        uint created_on;
+    }
     
     
-    function createNFT(uint256 _city, address _owner, string calldata _uri, bytes calldata _metaData) external returns(uint256 _id) {
-        require(IETHVCities(cityAddress).getCityGovernor(_city) == msg.sender, "You are not the Governor of City");
+    function createNFT(uint256 _city, address _owner, string calldata _type, string calldata _data, string calldata _uri, bytes calldata _metaData) external returns(uint256 _id) {
+        require(IETHVCities(cityAddress).getCitygovernor(_city) == msg.sender, "You are not the Governor of City");
         
         _id = ++nonce;
         
         _mint(_owner, _id);
         _setTokenURI(_id, _uri);
         
-        nftCity[_id] = _city;
-        nftMetaData[_id] = _metaData;
+        nftdata[_id] = NftMeta({city: _city, nftType: _type, data: _data, metaData: _metaData, created_on: block.timestamp});
     }
     
     
-    function updateNFTmeta(uint256 _nftID, bytes calldata _metaData) external {
-        require(nftCity[_nftID] > 0, "Invalid NFT ID");
-        require(IETHVCities(cityAddress).getCityGovernor(nftCity[_nftID]) == msg.sender, "You are not the Governor of City");
+    function getNFTtype(uint256 _nftID) external returns(string memory) {
+        NftMeta storage nM = nftdata[_nftID];
         
-        nftMetaData[_nftID] = _metaData;
+        return nM.nftType;
+    }
+    
+    
+    function getNFTMeta(uint256 _nftID) external view returns(uint, string memory, string memory, bytes memory, uint) {
+        NftMeta storage nM = nftdata[_nftID];
+        
+        return (nM.city, nM.nftType, nM.data, nM.metaData, nM.created_on);
     }
     
     
     function updateBaseURI(string calldata _uri) external onlyOwner {
         _setBaseURI(_uri);
+    }
+    
+    
+    function updateCityAddress(address _address) external onlyOwner {
+        cityAddress = _address;
     }
 }
